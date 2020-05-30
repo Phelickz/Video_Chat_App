@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:emoji_picker/emoji_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:video_chat/models/message.dart';
 import 'package:video_chat/models/user.dart';
 import 'package:video_chat/services/firestore.dart';
@@ -17,12 +19,15 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  Firestore _firestore = Firestore.instance;
   bool _writing = false;
+  bool _showEmoji = false;
   User sender;
+  ScrollController _scrollController = ScrollController();
   String _userId;
 
   DbCalls _dbCalls = DbCalls();
+
+  FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -50,6 +55,22 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  _showKeyboard() => _focusNode.requestFocus();
+
+  _hideKeyboard() => _focusNode.unfocus();
+
+  _hideEmojiContainer() {
+    setState(() {
+      _showEmoji = false;
+    });
+  }
+
+  _showEmojiContainer() {
+    setState(() {
+      _showEmoji = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,8 +82,31 @@ class _ChatScreenState extends State<ChatScreen> {
             child: _listMessages(),
           ),
           _chatTextField(),
+          _showEmoji
+              ? Container(
+                  child: _emojiContainer(),
+                )
+              : Container()
         ],
       ),
+    );
+  }
+
+  _emojiContainer() {
+    return EmojiPicker(
+      bgColor: GlobalColors.separatorColor,
+      indicatorColor: GlobalColors.blueColor,
+      rows: 3,
+      columns: 7,
+      onEmojiSelected: (emoji, category) {
+        setState(() {
+          _writing = true;
+        });
+
+        _textEditingController.text = _textEditingController.text + emoji.emoji;
+      },
+      recommendKeywords: ["face", "happy", "party", "sad"],
+      numRecommended: 50,
     );
   }
 
@@ -92,9 +136,18 @@ class _ChatScreenState extends State<ChatScreen> {
           stream: _dbCalls.getMessagesSnapshots(
               context, _userId, this.widget.receiver.uid),
           builder: (context, snapshot) {
+            SchedulerBinding.instance.addPostFrameCallback((_) {
+              _scrollController.animateTo(
+                _scrollController.position.minScrollExtent,
+                duration: Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+              );
+            });
             return snapshot.hasData
                 ? snapshot.data.documents.isNotEmpty
                     ? ListView.builder(
+                        controller: _scrollController,
+                        // reverse: true
                         itemCount: snapshot.data.documents.length,
                         itemBuilder: (context, index) {
                           return _chatMessageBubble(
@@ -194,33 +247,47 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           SizedBox(width: 5),
           Expanded(
-            child: TextField(
-              controller: _textEditingController,
-              style: TextStyle(color: Colors.white),
-              onChanged: (val) {
-                (val.length > 0 && val.trim() != "")
-                    ? isWriting(true)
-                    : isWriting(false);
-              },
-              decoration: InputDecoration(
-                hintText: "Type a message",
-                hintStyle: TextStyle(color: GlobalColors.greyColor),
-                border: OutlineInputBorder(
-                  borderRadius: const BorderRadius.all(
-                    const Radius.circular(50),
+            child: Stack(children: <Widget>[
+              TextField(
+                onTap: () => _hideEmojiContainer(),
+                focusNode: _focusNode,
+                controller: _textEditingController,
+                style: TextStyle(color: Colors.white),
+                onChanged: (val) {
+                  (val.length > 0 && val.trim() != "")
+                      ? isWriting(true)
+                      : isWriting(false);
+                },
+                decoration: InputDecoration(
+                  hintText: "Type a message",
+                  hintStyle: TextStyle(color: GlobalColors.greyColor),
+                  border: OutlineInputBorder(
+                    borderRadius: const BorderRadius.all(
+                      const Radius.circular(50),
+                    ),
+                    borderSide: BorderSide.none,
                   ),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-                filled: true,
-                fillColor: GlobalColors.separatorColor,
-                suffixIcon: GestureDetector(
-                  onTap: () {},
-                  child: Icon(Icons.face),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                  filled: true,
+                  fillColor: GlobalColors.separatorColor,
                 ),
               ),
-            ),
+              IconButton(
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                onPressed: () {
+                  if (!_showEmoji) {
+                    _hideKeyboard();
+                    _showEmojiContainer();
+                  } else {
+                    _showKeyboard();
+                    _hideEmojiContainer();
+                  }
+                },
+                icon: Icon(Icons.face),
+              ),
+            ]),
           ),
           _writing
               ? Container()

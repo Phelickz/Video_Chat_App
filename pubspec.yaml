@@ -35,6 +35,12 @@ dependencies:
   permission_handler: ^5.0.0+hotfix.6
   agora_rtc_engine: ^1.0.12
   shimmer: ^1.1.1
+  emoji_picker:
+  image_picker:
+  path_provider:
+  firebase_storage:
+  timeago:
+
 
 
 dev_dependencies:
