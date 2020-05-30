@@ -1,11 +1,15 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:emoji_picker/emoji_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:video_chat/models/message.dart';
 import 'package:video_chat/models/user.dart';
 import 'package:video_chat/services/firestore.dart';
+import 'package:video_chat/services/uploadImage.dart';
 import 'package:video_chat/utils/colors.dart';
 import 'package:video_chat/widgets/appbar.dart';
 import 'package:video_chat/widgets/modeTlle.dart';
@@ -28,6 +32,8 @@ class _ChatScreenState extends State<ChatScreen> {
   DbCalls _dbCalls = DbCalls();
 
   FocusNode _focusNode = FocusNode();
+
+  ImageService _imageService = ImageService();
 
   @override
   void initState() {
@@ -403,5 +409,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           );
         });
+  }
+
+  _pickImage({@required ImageSource source}) async {
+    File _selectedImage = await _imageService.pickImage(source: source);
   }
 }
