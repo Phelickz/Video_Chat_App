@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:video_chat/screens/chatScreen.dart';
 
 import 'screens/home.dart';
 import 'screens/login.dart';
+import 'screens/search.dart';
 import 'screens/splash.dart';
+import 'state/authState.dart'; 
 
 void main() {
   runApp(MyApp());
@@ -12,12 +16,18 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthenticationState())
+      ],
+          child: MaterialApp(
+        theme: ThemeData(
+          // brightness: Brightness.dark,
+          primarySwatch: Colors.blue,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+        ),
+        home: Splash(),
       ),
-      home: MyHomePage(),
     );
   }
 }

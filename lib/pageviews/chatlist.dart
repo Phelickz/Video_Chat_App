@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:video_chat/screens/search.dart';
 import 'package:video_chat/utils/colors.dart';
 import 'package:video_chat/widgets/appbar.dart';
 import 'package:video_chat/widgets/avatar.dart';
@@ -32,7 +33,10 @@ class _ChatListState extends State<ChatList> {
             Icons.search,
             color: Colors.white,
           ),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+                context, MaterialPageRoute(builder: (context) => Search()));
+          },
         ),
         IconButton(
           icon: Icon(
