@@ -25,7 +25,7 @@ class User {
     data['username'] = user.username;
     data['status'] = user.status;
     data['state'] = user.state;
-    data['profilePhoto'] = user.profilePhoto;
+    data['photoUrl'] = user.profilePhoto;
     return data;
   }
 
@@ -36,6 +36,6 @@ class User {
     this.username = doc['username'];
     this.status = doc['status'];
     this.state = doc['state'];
-    this.profilePhoto = doc['profilePhoto'];
+    this.profilePhoto = doc['photoUrl'];
   }
 }

@@ -6,11 +6,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:video_chat/models/message.dart';
 import 'package:video_chat/models/user.dart';
+import 'package:video_chat/services/callService.dart';
 import 'package:video_chat/services/firestore.dart';
 import 'package:video_chat/services/uploadImage.dart';
+import 'package:video_chat/state/imageProvider.dart';
 import 'package:video_chat/utils/colors.dart';
+import 'package:video_chat/utils/permissions.dart';
 import 'package:video_chat/widgets/appbar.dart';
 import 'package:video_chat/widgets/modeTlle.dart';
 
@@ -34,6 +38,7 @@ class _ChatScreenState extends State<ChatScreen> {
   FocusNode _focusNode = FocusNode();
 
   ImageService _imageService = ImageService();
+  ImageServiceProvider _imageServiceProvider;
 
   @override
   void initState() {
@@ -79,6 +84,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _imageServiceProvider = Provider.of<ImageServiceProvider>(context);
     return Scaffold(
       backgroundColor: GlobalColors.blackColor,
       appBar: _appBar(context),
@@ -87,12 +93,19 @@ class _ChatScreenState extends State<ChatScreen> {
           Flexible(
             child: _listMessages(),
           ),
-          _chatTextField(),
+          _imageServiceProvider.getView == View.Loading
+              ? Container(
+                  alignment: Alignment.centerRight,
+                  margin: const EdgeInsets.only(right: 15),
+                  child: CircularProgressIndicator(),
+                )
+              : Container(),
           _showEmoji
               ? Container(
                   child: _emojiContainer(),
                 )
-              : Container()
+              : Container(),
+          _chatTextField(),
         ],
       ),
     );
@@ -142,13 +155,14 @@ class _ChatScreenState extends State<ChatScreen> {
           stream: _dbCalls.getMessagesSnapshots(
               context, _userId, this.widget.receiver.uid),
           builder: (context, snapshot) {
+            _scrollController.hasClients ?
             SchedulerBinding.instance.addPostFrameCallback((_) {
               _scrollController.animateTo(
                 _scrollController.position.minScrollExtent,
                 duration: Duration(milliseconds: 250),
                 curve: Curves.easeInOut,
               );
-            });
+            }) : {};
             return snapshot.hasData
                 ? snapshot.data.documents.isNotEmpty
                     ? ListView.builder(
@@ -199,20 +213,24 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       child: Padding(
         padding: EdgeInsets.all(10),
-        child: Text(
-          _message.message,
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.white,
-          ),
-        ),
+        child: _message.type == "text"
+            ? Text(
+                _message.message,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              )
+            : _message.photoUrl != null
+                ? Image.network(_message.photoUrl)
+                : Container(),
       ),
     );
   }
 
   Widget _receiverBubble(Message _message) {
     return Container(
-      margin: EdgeInsets.only(top: 12),
+      margin: EdgeInsets.only(top: 12, left: 3),
       constraints:
           BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.65),
       decoration: BoxDecoration(
@@ -279,19 +297,22 @@ class _ChatScreenState extends State<ChatScreen> {
                   fillColor: GlobalColors.separatorColor,
                 ),
               ),
-              IconButton(
-                splashColor: Colors.transparent,
-                highlightColor: Colors.transparent,
-                onPressed: () {
-                  if (!_showEmoji) {
-                    _hideKeyboard();
-                    _showEmojiContainer();
-                  } else {
-                    _showKeyboard();
-                    _hideEmojiContainer();
-                  }
-                },
-                icon: Icon(Icons.face),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: IconButton(
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  onPressed: () {
+                    if (!_showEmoji) {
+                      _hideKeyboard();
+                      _showEmojiContainer();
+                    } else {
+                      _showKeyboard();
+                      _hideEmojiContainer();
+                    }
+                  },
+                  icon: Icon(Icons.face),
+                ),
               ),
             ]),
           ),
@@ -301,7 +322,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Icon(Icons.record_voice_over),
                 ),
-          _writing ? Container() : Icon(Icons.camera),
+          _writing
+              ? Container()
+              : InkWell(
+                  onTap: () => _pickImage(source: ImageSource.camera),
+                  child: Icon(Icons.camera)),
           _writing
               ? Container(
                   margin: EdgeInsets.only(left: 10),
@@ -327,9 +352,15 @@ class _ChatScreenState extends State<ChatScreen> {
       title: Text(this.widget.receiver.username),
       actions: <Widget>[
         IconButton(
-          icon: Icon(Icons.video_call),
-          onPressed: () {},
-        ),
+            icon: Icon(Icons.video_call),
+            onPressed: () async {
+              await Permissions().cameraAndMicrophonePermissionsGranted()
+                  ? CallService().dial(
+                      dialler: sender,
+                      receiver: this.widget.receiver,
+                      context: context)
+                  : null;
+            }),
         IconButton(
           icon: Icon(Icons.call),
           onPressed: () {},
@@ -382,6 +413,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: ListView(
                 children: <Widget>[
                   Tile(
+                    onTap: () => _pickImage(source: ImageSource.gallery),
                     title: "Media",
                     subtitle: "Share photos and videos",
                     icon: Icons.image,
@@ -411,7 +443,14 @@ class _ChatScreenState extends State<ChatScreen> {
         });
   }
 
-  _pickImage({@required ImageSource source}) async {
+  void _pickImage({@required ImageSource source}) async {
     File _selectedImage = await _imageService.pickImage(source: source);
+
+    _dbCalls.uploadImage(
+      _selectedImage,
+      this.widget.receiver.uid,
+      _userId,
+      _imageServiceProvider,
+    );
   }
 }

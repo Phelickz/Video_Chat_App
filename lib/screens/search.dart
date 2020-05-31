@@ -31,7 +31,7 @@ class _SearchState extends State<Search> {
   Future<void> getUserID() async {
     final uid = await Provider.of<AuthenticationState>(context, listen: false)
         .currentUserId();
-    if(uid != null){
+    if (uid != null) {
       _dbCalls.getAllUsers(uid).then((List<User> list) {
         setState(() {
           userList = list;
@@ -62,18 +62,22 @@ class _SearchState extends State<Search> {
         itemBuilder: (context, index) {
           var _data = queryList[index];
           return ChatTile(
-            onTap: (){
-              Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(receiver: _data,)));
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ChatScreen(
+                            receiver: _data,
+                          )));
             },
             small: false,
             leading: Avatar(),
-            title: Text(_data.username, style: TextStyle(
-              color: Colors.white,
-              fontSize: 20
-            ),),
-            subtitle: Text('send a message', style: TextStyle(
-              color: Colors.white54
-            )),
+            title: Text(
+              _data.username,
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+            subtitle:
+                Text('send a message', style: TextStyle(color: Colors.white54)),
           );
         });
   }
@@ -94,28 +98,31 @@ class _SearchState extends State<Search> {
                   onPressed: () {
                     Navigator.pop(context);
                   }),
-              Container(
-                width: MediaQuery.of(context).size.width * 0.87,
-                child: TextFormField(
-                  controller: _searchController,
-                  onChanged: (val) {
-                    setState(() {
-                      query = val;
-                    });
-                  },
-                  decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: "Search username",
-                      hintStyle: TextStyle(
-                        color: Colors.black54
-                      ),
-                      suffixIcon: IconButton(
-                          icon: Icon(Icons.close, color: Colors.black,),
-                          onPressed: () {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _searchController.clear();
-                            });
-                          })),
+              Expanded(
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.87,
+                  child: TextFormField(
+                    controller: _searchController,
+                    onChanged: (val) {
+                      setState(() {
+                        query = val;
+                      });
+                    },
+                    decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: "Search username",
+                        hintStyle: TextStyle(color: Colors.black54),
+                        suffixIcon: IconButton(
+                            icon: Icon(
+                              Icons.close,
+                              color: Colors.black,
+                            ),
+                            onPressed: () {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                _searchController.clear();
+                              });
+                            })),
+                  ),
                 ),
               ),
             ],
@@ -128,13 +135,12 @@ class _SearchState extends State<Search> {
     double width = MediaQuery.of(context).size.width;
     double height = MediaQuery.of(context).size.height;
     return SafeArea(
-          child: Scaffold(
+      child: Scaffold(
         backgroundColor: GlobalColors.blackColor,
         body: Column(
           children: <Widget>[
             _searchBar(context, width, height),
             Expanded(
-          
               child: Container(
                 child: getQuerySuggestions(query),
               ),

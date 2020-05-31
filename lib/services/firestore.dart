@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:video_chat/models/message.dart';
 import 'package:video_chat/models/user.dart';
+import 'package:video_chat/state/imageProvider.dart';
 
 Firestore _firestore = Firestore.instance;
 FirebaseStorage _firebaseStorage = FirebaseStorage.instance;
@@ -65,8 +66,12 @@ class DbCalls {
     }
   }
 
-  void uploadImage(File image, String receiverId, String senderId) async{
+  void uploadImage(File image, String receiverId, String senderId, ImageServiceProvider _imageServiceProvider) async{
+    _imageServiceProvider.setToLoading();
+    
     String url = await uploadImageStorage(image);
+
+    _imageServiceProvider.setToIdle();
 
     imageMsg(url, receiverId, senderId);
   }

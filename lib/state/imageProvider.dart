@@ -6,7 +6,7 @@ enum View{
 }
 
 
-class ImageProvider with ChangeNotifier{
+class ImageServiceProvider with ChangeNotifier{
   View _view = View.Idle;
   View get getView => _view;
 

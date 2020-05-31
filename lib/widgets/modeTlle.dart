@@ -6,12 +6,13 @@ class Tile extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
+  final Function onTap;
 
   const Tile({
     Key key,
     @required this.title,
     @required this.subtitle,
-    @required this.icon,
+    @required this.icon, this.onTap,
   }) : super(key: key);
 
   @override
@@ -19,6 +20,7 @@ class Tile extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 15),
       child: ChatTile(
+        onTap: onTap,
         leading: Container(
           margin: const EdgeInsets.only(right: 10),
           decoration: BoxDecoration(
