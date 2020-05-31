@@ -1,9 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:provider/provider.dart';
+import 'package:video_chat/models/contacts.dart';
+import 'package:video_chat/screens/contacts.dart';
 import 'package:video_chat/screens/search.dart';
+import 'package:video_chat/services/firestore.dart';
+import 'package:video_chat/state/authState.dart';
 import 'package:video_chat/utils/colors.dart';
 import 'package:video_chat/widgets/appbar.dart';
 import 'package:video_chat/widgets/avatar.dart';
 import 'package:video_chat/widgets/chat_tile.dart';
+
+
 
 class ChatList extends StatefulWidget {
   @override
@@ -55,39 +64,59 @@ class _ChatListState extends State<ChatList> {
   }
 }
 
+final DbCalls dbCalls = DbCalls();
+
 class Chats extends StatefulWidget {
   @override
   _ChatsState createState() => _ChatsState();
 }
 
 class _ChatsState extends State<Chats> {
+
+  String uid;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    SchedulerBinding.instance.addPostFrameCallback((_) async { 
+      String uid = await Provider.of<AuthenticationState>(context, listen: false).currentUserId();
+      setState(() {
+        this.uid = uid;
+      });
+    });
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-        child: ListView.builder(
-            itemCount: 2,
-            padding: const EdgeInsets.all(10),
-            itemBuilder: (context, index) {
-              return ChatTile(
-                onTap: () {},
-                small: false,
-                leading: Avatar(),
-                title: Text(
-                  'Phelickz',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontFamily: "Arial",
-                    fontSize: 19,
-                  ),
-                ),
-                subtitle: Text(
-                  'Hello',
-                  style: TextStyle(
-                    color: GlobalColors.greyColor,
-                    fontSize: 14,
-                  ),
-                ),
-              );
-            }));
+        child: StreamBuilder<QuerySnapshot>(
+          stream: dbCalls.fetchContacts(
+            userId: this.uid
+          ),
+          builder: (context, snapshot) {
+            if(snapshot.hasData){
+              var data = snapshot.data.documents;
+
+              if(data.isEmpty){
+                return Center(child: Text('Start a new conversation', style: TextStyle(
+                  color: Colors.white54
+                ),));
+              }
+
+              return ListView.builder(
+                itemCount: data.length,
+                padding: const EdgeInsets.all(10),
+                itemBuilder: (context, index) {
+
+                  Contact contact = Contact.fromMap(data[index].data);
+                  return Contacts(
+                    contact, uid
+                  );
+                });
+            }
+              return Center(child: CircularProgressIndicator());
+          }
+        ));
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_chat/screens/chatScreen.dart';
+import 'package:video_chat/state/userState.dart';
 
 import 'screens/home.dart';
 import 'screens/login.dart';
@@ -21,6 +22,8 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthenticationState()),
         ChangeNotifierProvider(create: (_) => ImageServiceProvider()),
+        ChangeNotifierProvider(create: (_) => UserNotifier()),
+
       ],
       child: MaterialApp(
         theme: ThemeData(

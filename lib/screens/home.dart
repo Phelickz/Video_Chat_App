@@ -1,8 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:provider/provider.dart';
 import 'package:video_chat/pageviews/callLogs.dart';
 import 'package:video_chat/pageviews/chatlist.dart';
 import 'package:video_chat/pageviews/contact.dart';
+import 'package:video_chat/screens/contacts.dart';
+import 'package:video_chat/state/authState.dart';
 import 'package:video_chat/utils/colors.dart';
 
 import 'calls/pickupLayout.dart';
@@ -12,15 +17,82 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   PageController _pageController;
   int _page = 0;
 
+  int stateToNum(UserState userState) {
+    switch (userState) {
+      case UserState.Offline:
+        return 0;
+
+      case UserState.Online:
+        return 1;
+
+      default:
+        return 2;
+    }
+  }
+  String uid;
+
   @override
   void initState() {
+
+     SchedulerBinding.instance.addPostFrameCallback((_) async {
+       final uid = await Provider.of<AuthenticationState>(context, listen: false).currentUserId();
+     setState(() {
+       this.uid = uid;
+     });
+      setUserState(
+        uid,
+        UserState.Online, 
+      );
+    });
+
+    WidgetsBinding.instance.addObserver(this);
     _pageController = PageController();
     super.initState();
   }
+
+  @override
+  void dispose() {
+    super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.resumed:
+        this.uid != null
+            ? setUserState(
+                this.uid, UserState.Online)
+            : print("resume state");
+        break;
+      case AppLifecycleState.inactive:
+        this.uid != null
+            ? setUserState(
+                this.uid, UserState.Offline)
+            : print("inactive state");
+        break;
+      case AppLifecycleState.paused:
+        this.uid != null
+            ? setUserState(
+                this.uid, UserState.Waiting)
+            : print("paused state");
+        break;
+      case AppLifecycleState.detached:
+        this.uid != null
+            ? setUserState(
+                this.uid, UserState.Offline)
+            : print("detached state");
+        break;
+    }
+  }
+
 
   void _onPageChanged(int page) {
     setState(() {
@@ -44,7 +116,7 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             Container(child: ChatList()),
             Container(child: CallLogs()),
-            Container(child: Contact())
+            Container(child: Profile())
           ],
         ),
         bottomNavigationBar: Container(
@@ -84,5 +156,13 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
+  }
+
+  void setUserState(String userId, UserState userstate){
+    int stateNum = stateToNum(userstate);
+
+    Firestore.instance.collection('userData').document(userId).updateData({
+      "state" : stateNum
+    });
   }
 }
